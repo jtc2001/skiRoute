@@ -1,5 +1,6 @@
 package main.java.com.artcoffer.skiroute.model;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -17,7 +18,59 @@ import com.artcoffer.utilities.graph.search.BreadthFirstVertexSearch;
 import com.artcoffer.utilities.graph.search.Path;
 import com.artcoffer.utilities.graph.search.PathSearch;
 
-public class GraphLoader {
+public class FileGraphLoader {
+	
+	final File graphLoaderFile;
+	
+	public FileGraphLoader(File file){
+		this.graphLoaderFile = file;
+	}
+	
+	public static Graph<MountainFeature> loadGraphFromFile(File file){
+		
+		Graph<MountainFeature> mountain = new Graph<MountainFeature>();
+		Map<Vertex<MountainFeature>, Vertex<MountainFeature>> mountainFeatures = new HashMap<>();
+		try(Stream<String> lines = Files.lines(Paths.get(file.getAbsolutePath()))){
+			List<String[]> features = lines.map((s -> s.split("->"))).collect(Collectors.toList());
+			
+			for(String[] mountainFeature : features){
+				String[] fromVertexVal = mountainFeature[0].split(":");
+				String[] toVertexVal = mountainFeature[1].split(":");
+				
+				MountainFeature fromFeatureType = MountainFeature.fromValue(fromVertexVal[0], fromVertexVal[1]);
+				MountainFeature toFeatureType = MountainFeature.fromValue(toVertexVal[0], toVertexVal[1]);
+				Vertex<MountainFeature> fromVertex = new Vertex<MountainFeature>(fromFeatureType);
+				Vertex<MountainFeature> toVertex = new Vertex<MountainFeature>(toFeatureType);
+				
+				if(mountainFeatures.get(fromVertex) == null){
+					mountainFeatures.put(fromVertex, fromVertex);
+				}else{
+					fromVertex = mountainFeatures.get(fromVertex);
+				}
+				
+				if(mountainFeatures.get(toVertex) == null){
+					mountainFeatures.put(toVertex, toVertex);
+				}else{
+					toVertex = mountainFeatures.get(toVertex);
+				}
+				
+				Edge<MountainFeature> edge = new Edge<>(fromVertex, toVertex);
+				
+				mountain.addVertex(fromVertex);
+				mountain.addVertex(toVertex);
+				fromVertex.addEdge(edge);
+				mountain.addEdge(edge);
+				
+			}
+		}catch(IOException ioe){
+			ioe.printStackTrace();
+			System.out.println("Failed to load graph");
+		}
+		
+		return mountain;
+	}
+	
+	
 	public static void main(String[] args) throws IOException{
 		
 		Graph<MountainFeature> mountain = new Graph<MountainFeature>();
